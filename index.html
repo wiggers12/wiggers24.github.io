@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TraderPro</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0; /* Remove default body margin */
+    }
+
+    .container {
+      background: #1e293b;
+      padding: 30px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Add some shadow */
+    }
+
+    h1, h2 {
+      text-align: center;
+      color: #cbd5e1; /* Lighter text for headings */
+    }
+
+    input, button {
+      width: 100%;
+      padding: 12px; /* Slightly more padding */
+      margin: 10px 0;
+      border: none;
+      border-radius: 5px;
+      box-sizing: border-box; /* Include padding in width */
+    }
+
+    input {
+      background: #334155; /* Darker input background */
+      color: #fff;
+      border: 1px solid #475569; /* Subtle border */
+    }
+
+    input::placeholder {
+      color: #94a3b8; /* Lighter placeholder text */
+    }
+
+    button {
+      background: #0ea5e9;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease; /* Smooth transition on hover */
+    }
+
+    button:hover {
+      background: #0284c7;
+    }
+
+    #erro {
+      color: #ef4444; /* Red for error messages */
+      text-align: center;
+      margin-top: -5px;
+      margin-bottom: 10px;
+    }
+
+    #acoes div {
+      margin-bottom: 15px; /* Slightly less margin */
+      background: #334155;
+      padding: 15px; /* More padding */
+      border-radius: 8px; /* Slightly more rounded */
+      border: 1px solid #475569; /* Subtle border */
+    }
+
+    #acoes strong {
+      color: #67e8f9; /* Cyan for stock names */
+    }
+
+    #rankingList li {
+      background: #334155;
+      margin-bottom: 8px;
+      padding: 10px;
+      border-radius: 5px;
+      list-style: none; /* Remove default list style */
+    }
+
+    #rankingList {
+      padding-left: 0; /* Remove default padding for ordered list */
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 600px) {
+      .container {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="telaLogin">
+    <h1>TraderPro</h1>
+    <input type="text" id="nome" placeholder="Nome (cadastro)">
+    <input type="text" id="pix" placeholder="Chave Pix (cadastro)">
+    <input type="email" id="email" placeholder="E-mail">
+    <input type="password" id="senha" placeholder="Senha">
+    <div id="erro"></div>
+    <button onclick="login()">Entrar</button>
+    <button onclick="cadastro()">Cadastrar</button>
+  </div>
+
+  <div class="container" id="telaDashboard" style="display: none;">
+    <h2>Bem-vindo, <span id="userNome">...</span></h2>
+    <p>Saldo: R$ <span id="saldo">...</span></p>
+    <button onclick="mostrarSimulador()">Iniciar Simulação</button>
+    <button onclick="mostrarPix()">Depositar via Pix</button>
+    <button onclick="mostrarRanking()">Ver Ranking</button>
+    <button onclick="logout()">Sair</button>
+  </div>
+
+  <div class="container" id="telaJogo" style="display: none;">
+    <h2>Simulação de Investimentos</h2>
+    <p>Tempo restante: <span id="timer">180</span> segundos</p>
+    <div id="acoes"></div>
+    <button onclick="sairParaDashboard()">Sair</button>
+  </div>
+
+  <div class="container" id="telaPix" style="display: none;">
+    <h2>Depósito via Pix</h2>
+    <p>Chave Pix: <strong>SEU_PIX_AQUI</strong></p>
+    <p>Após o pagamento, envie o comprovante abaixo:</p>
+    <input type="file" id="comprovante" />
+    <button onclick="enviarComprovante()">Enviar Comprovante</button>
+    <br/><br/>
+    <button onclick="voltar()">Voltar</button>
+  </div>
+
+  <div class="container" id="telaRanking" style="display: none;">
+    <h2>Ranking Semanal</h2>
+    <ol id="rankingList"></ol>
+    <button onclick="voltar()">Voltar</button>
+  </div>
+
+  <!-- Firebase SDKs - Usando a versão compat para compatibilidade com a sintaxe antiga -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+
+  <script>
+    // CONFIGURE SEU FIREBASE AQUI
+    // ESTES SÃO PLACEHOLDERS. VOCÊ PRECISA SUBSTITUIR PELAS SUAS PRÓPRIAS CREDENCIAIS DO PROJETO FIREBASE.
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY", // Substitua pela sua API Key do Firebase
+      authDomain: "SEU_PROJETO.firebaseapp.com", // Substitua pelo seu authDomain
+      projectId: "SEU_PROJETO", // Substitua pelo seu Project ID
+      storageBucket: "SEU_PROJETO.appspot.com", // Substitua pelo seu Storage Bucket
+      messagingSenderId: "0000000000", // Substitua pelo seu Messaging Sender ID
+      appId: "APP_ID" // Substitua pelo seu App ID
+    };
+    
+    // Inicializa o Firebase com suas configurações
+    firebase.initializeApp(firebaseConfig);
+    
+    // Obtém as instâncias dos serviços do Firebase
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    // Variável para armazenar o usuário logado
+    let usuario = null;
+
+    // Função para fazer login de um usuário existente
+    function login() {
+      const email = document.getElementById("email").value;
+      const senha = document.getElementById("senha").value;
+      const erroDiv = document.getElementById("erro");
+      erroDiv.innerText = ""; // Limpa mensagens de erro anteriores
+
+      auth.signInWithEmailAndPassword(email, senha)
+        .then(res => {
+          usuario = res.user; // Armazena o usuário logado
+          carregarDashboard(); // Carrega o dashboard após o login
+        })
+        .catch(error => {
+          // Exibe mensagens de erro específicas para o usuário
+          if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+            erroDiv.innerText = "E-mail ou senha inválidos.";
+          } else if (error.code === 'auth/invalid-email') {
+            erroDiv.innerText = "Formato de e-mail inválido.";
+          } else {
+            erroDiv.innerText = "Erro ao fazer login. Tente novamente.";
+            console.error("Erro de login:", error); // Loga o erro completo para depuração
+          }
+        });
+    }
+
+    // Função para cadastrar um novo usuário
+    function cadastro() {
+      const email = document.getElementById("email").value;
+      const senha = document.getElementById("senha").value;
+      const nome = document.getElementById("nome").value;
+      const pix = document.getElementById("pix").value;
+      const erroDiv = document.getElementById("erro");
+      erroDiv.innerText = ""; // Limpa mensagens de erro anteriores
+
+      // Validação básica dos campos
+      if (!nome || !pix || !email || !senha) {
+        erroDiv.innerText = "Por favor, preencha todos os campos.";
+        return;
+      }
+      if (senha.length < 6) {
+        erroDiv.innerText = "A senha deve ter pelo menos 6 caracteres.";
+        return;
+      }
+
+      auth.createUserWithEmailAndPassword(email, senha)
+        .then(res => {
+          usuario = res.user; // Armazena o novo usuário
+          // Cria um documento no Firestore para o novo usuário com saldo inicial e pontos
+          return db.collection("usuarios").doc(usuario.uid).set({
+            nome: nome,
+            pix: pix,
+            saldo: 1000, // Saldo inicial para novos usuários
+            pontos: 0
+          });
+        })
+        .then(() => {
+          carregarDashboard(); // Carrega o dashboard após o cadastro
+        })
+        .catch(error => {
+          // Exibe mensagens de erro específicas para o usuário
+          if (error.code === 'auth/email-already-in-use') {
+            erroDiv.innerText = "Este e-mail já está em uso.";
+          } else if (error.code === 'auth/invalid-email') {
+            erroDiv.innerText = "Formato de e-mail inválido.";
+          } else if (error.code === 'auth/weak-password') {
+            erroDiv.innerText = "Senha muito fraca. Use pelo menos 6 caracteres.";
+          } else {
+            erroDiv.innerText = "Erro ao cadastrar. Tente novamente.";
+            console.error("Erro de cadastro:", error); // Loga o erro completo para depuração
+          }
+        });
+    }
+
+    // Carrega os dados do usuário para o dashboard
+    function carregarDashboard() {
+      // Garante que há um usuário logado antes de tentar buscar dados
+      if (!auth.currentUser) {
+        mostrarTela("telaLogin");
+        return;
+      }
+      db.collection("usuarios").doc(auth.currentUser.uid).get().then(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          document.getElementById("userNome").innerText = data.nome;
+          document.getElementById("saldo").innerText = parseFloat(data.saldo).toFixed(2); // Formata o saldo
+          mostrarTela("telaDashboard");
+        } else {
+          console.error("Dados do usuário não encontrados no Firestore.");
+          logout(); // Se os dados não existirem, desloga o usuário
+        }
+      }).catch(error => {
+        console.error("Erro ao carregar dashboard:", error);
+        logout(); // Em caso de erro, desloga o usuário
+      });
+    }
+
+    // Desloga o usuário
+    function logout() {
+      auth.signOut().then(() => {
+        usuario = null; // Limpa a variável de usuário
+        mostrarTela("telaLogin"); // Volta para a tela de login
+      }).catch(error => {
+        console.error("Erro ao fazer logout:", error);
+      });
+    }
+
+    // Função para mostrar a tela correta e esconder as outras
+    function mostrarTela(id) {
+      const telas = ["telaLogin", "telaDashboard", "telaJogo", "telaPix", "telaRanking"];
+      telas.forEach(t => document.getElementById(t).style.display = "none");
+      document.getElementById(id).style.display = "block";
+    }
+
+    // Funções para navegar entre as telas
+    function mostrarSimulador() {
+      iniciarJogo();
+      mostrarTela("telaJogo");
+    }
+
+    function mostrarPix() {
+      mostrarTela("telaPix");
+      // Limpa o campo de arquivo ao mostrar a tela Pix
+      document.getElementById("comprovante").value = ''; 
+    }
+
+    function mostrarRanking() {
+      carregarRanking();
+      mostrarTela("telaRanking");
+    }
+
+    function voltar() {
+      mostrarTela("telaDashboard");
+    }
+
+    function sairParaDashboard() {
+      mostrarTela("telaDashboard");
+      // Opcional: parar o timer do jogo se estiver rodando
+      // if (intervaloJogo) clearInterval(intervaloJogo); 
+    }
+
+    // Variáveis globais para o jogo
+    let intervaloJogo = null;
+    let acoesDoJogo = [
+      { nome: "TechCorp", preco: 100, variacao: 0 },
+      { nome: "AgroX", preco: 80, variacao: 0 },
+      { nome: "StartBank", preco: 120, variacao: 0 }
+    ];
+
+    // Função para iniciar a simulação de investimentos
+    function iniciarJogo() {
+      let tempo = 180; // 3 minutos
+      document.getElementById("timer").innerText = tempo;
+
+      // Limpa qualquer intervalo anterior para evitar múltiplos timers
+      if (intervaloJogo) clearInterval(intervaloJogo);
+
+      intervaloJogo = setInterval(() => {
+        tempo--;
+        document.getElementById("timer").innerText = tempo;
+
+        // Atualiza os preços das ações a cada segundo
+        atualizarPrecosAcoes();
+
+        if (tempo <= 0) {
+          clearInterval(intervaloJogo);
+          alert("Tempo da simulação esgotado!");
+          // Opcional: calcular e exibir resultados finais aqui
+          sairParaDashboard();
+        }
+      }, 1000);
+
+      // Exibe as ações iniciais
+      exibirAcoes();
+    }
+
+    // Função para atualizar os preços das ações aleatoriamente
+    function atualizarPrecosAcoes() {
+      const divAcoes = document.getElementById("acoes");
+      divAcoes.innerHTML = ""; // Limpa a lista para redesenhar
+
+      acoesDoJogo.forEach(acao => {
+        // Gera uma variação aleatória (ex: -5 a +5)
+        const variacaoPercentual = (Math.random() * 10 - 5) / 100; // -5% a +5%
+        acao.preco *= (1 + variacaoPercentual);
+        acao.preco = Math.max(1, acao.preco); // Garante que o preço não caia abaixo de 1
+        acao.variacao = variacaoPercentual * 100; // Armazena a variação em percentual
+
+        const el = document.createElement("div");
+        const corVariacao = acao.variacao >= 0 ? '#22c55e' : '#ef4444'; // Verde para alta, Vermelho para baixa
+        const sinalVariacao = acao.variacao >= 0 ? '+' : '';
+
+        el.innerHTML = `
+          <strong>${acao.nome}</strong><br>
+          Preço: R$ ${acao.preco.toFixed(2)} 
+          <span style="color: ${corVariacao};">(${sinalVariacao}${acao.variacao.toFixed(2)}%)</span>
+        `;
+        divAcoes.appendChild(el);
+      });
+    }
+
+    // Função para exibir as ações (chamada no início do jogo)
+    function exibirAcoes() {
+      const divAcoes = document.getElementById("acoes");
+      divAcoes.innerHTML = "";
+      acoesDoJogo.forEach(acao => {
+        const el = document.createElement("div");
+        el.innerHTML = `<strong>${acao.nome}</strong><br>Preço: R$ ${acao.preco.toFixed(2)}`;
+        divAcoes.appendChild(el);
+      });
+    }
+
+
+    // Carrega o ranking dos usuários
+    function carregarRanking() {
+      db.collection("usuarios")
+        .orderBy("pontos", "desc") // Ordena por pontos em ordem decrescente
+        .limit(10) // Limita aos 10 primeiros
+        .get()
+        .then(snapshot => {
+          const list = document.getElementById("rankingList");
+          list.innerHTML = ""; // Limpa a lista anterior
+          if (snapshot.empty) {
+            list.innerHTML = "<li>Nenhum usuário no ranking ainda.</li>";
+            return;
+          }
+          snapshot.forEach((doc, index) => {
+            const data = doc.data();
+            const item = document.createElement("li");
+            // Adiciona a posição no ranking
+            item.innerText = `${index + 1}. ${data.nome} - Saldo: R$ ${parseFloat(data.saldo).toFixed(2)}`; 
+            list.appendChild(item);
+          });
+        }).catch(error => {
+          console.error("Erro ao carregar ranking:", error);
+          const list = document.getElementById("rankingList");
+          list.innerHTML = "<li>Erro ao carregar o ranking.</li>";
+        });
+    }
+
+    // Função para enviar o comprovante de Pix para o Firebase Storage
+    function enviarComprovante() {
+      const fileInput = document.getElementById("comprovante");
+      const file = fileInput.files[0];
+      
+      if (!file) {
+        alert("Por favor, selecione um arquivo de comprovante.");
+        return;
+      }
+      if (!auth.currentUser) {
+        alert("Você precisa estar logado para enviar um comprovante.");
+        return;
+      }
+
+      // Exibe uma mensagem de carregamento (substitui alert)
+      const mensagemDiv = document.createElement('div');
+      mensagemDiv.id = 'mensagem-status';
+      mensagemDiv.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #2d3748; color: white; padding: 20px; border-radius: 8px; z-index: 1000;';
+      mensagemDiv.innerText = "Enviando comprovante...";
+      document.body.appendChild(mensagemDiv);
+
+      // Cria uma referência no Storage com um nome único
+      const ref = storage.ref().child("comprovantes_pix/" + auth.currentUser.uid + "_" + Date.now() + "_" + file.name);
+      
+      ref.put(file).then(snapshot => {
+        // Remove a mensagem de carregamento
+        document.body.removeChild(mensagemDiv);
+        alert("Comprovante enviado com sucesso! Aguarde a verificação."); // Usa alert temporariamente, idealmente uma modal customizada
+        voltar(); // Volta para o dashboard
+        fileInput.value = ''; // Limpa o input de arquivo
+      }).catch(error => {
+        // Remove a mensagem de carregamento
+        document.body.removeChild(mensagemDiv);
+        alert("Erro ao enviar comprovante: " + error.message); // Usa alert temporariamente
+        console.error("Erro ao enviar comprovante:", error);
+      });
+    }
+
+    // AUTO LOGIN: Verifica o estado de autenticação do usuário ao carregar a página
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        usuario = user; // Define o usuário logado
+        carregarDashboard(); // Carrega o dashboard
+      } else {
+        mostrarTela("telaLogin"); // Se não houver usuário, mostra a tela de login
+      }
+    });
+  </script>
+</body>
+</html>
