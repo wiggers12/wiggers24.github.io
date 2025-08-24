@@ -14,44 +14,100 @@
   </style>
 </head>
 <body>
-<header>📊 Dashboard & Caixa</header>
+<header>📊 Dashboard & Relatórios</header>
 
-<div class="chart-card"><div id="chartVendas" class="chart"></div></div>
+<div class="chart-card"><div id="chartFinanceiro" class="chart"></div></div>
+<div class="chart-card"><div id="chartEstoque" class="chart"></div></div>
 <div class="chart-card"><div id="chartProdutos" class="chart"></div></div>
+<div class="chart-card"><div id="chartPagamentos" class="chart"></div></div>
 <div class="chart-card"><div id="chartTempo" class="chart"></div></div>
 
 <script>
-let dados = JSON.parse(localStorage.getItem("comandaDigital")) || {mesas:[], pedidos:[], vendas:[]};
+let dados = JSON.parse(localStorage.getItem("comandaDigital")) || {
+  mesas:[], pedidos:[], vendas:[], financeiro:{entradas:0,saidas:0,saldo:0}, estoque:[]
+};
 
-// Vendas por Mesa
-let totalPorMesa={};
-dados.pedidos.forEach(p=>{ totalPorMesa[p.mesa]=(totalPorMesa[p.mesa]||0)+p.valor; });
-echarts.init(document.getElementById('chartVendas')).setOption({
-  title:{text:"💵 Vendas por Mesa", textStyle:{color:'#d4af37'}},
-  xAxis:{type:'category', data:Object.keys(totalPorMesa), axisLabel:{color:'#fff'}},
-  yAxis:{type:'value', axisLabel:{color:'#fff'}},
-  series:[{data:Object.values(totalPorMesa), type:'bar', itemStyle:{color:'#8e44ad'}, label:{show:true,color:'#fff'}}]
+// =================== 📊 FINANCEIRO ===================
+let entradas=dados.financeiro.entradas||0;
+let saidas=dados.financeiro.saidas||0;
+let saldo=dados.financeiro.saldo||0;
+
+echarts.init(document.getElementById('chartFinanceiro')).setOption({
+  title:{text:"💰 Financeiro", textStyle:{color:'#d4af37'}},
+  tooltip:{trigger:'item'},
+  series:[{
+    type:'pie',
+    radius:['40%','70%'],
+    data:[
+      {name:"Entradas", value:entradas},
+      {name:"Saídas", value:saidas},
+      {name:"Saldo Atual", value:saldo}
+    ],
+    itemStyle:{shadowBlur:15, shadowColor:'#000'},
+    label:{color:'#fff'}
+  }]
 });
 
-// Produtos mais vendidos
+// =================== 📦 ESTOQUE ===================
+if(dados.estoque && dados.estoque.length>0){
+  let estProdutos=dados.estoque.map(e=>e.nome);
+  let estQtd=dados.estoque.map(e=>e.qtd);
+
+  echarts.init(document.getElementById('chartEstoque')).setOption({
+    title:{text:"📦 Estoque Atual", textStyle:{color:'#d4af37'}},
+    tooltip:{},
+    xAxis:{type:'category', data:estProdutos, axisLabel:{color:'#fff'}},
+    yAxis:{type:'value', axisLabel:{color:'#fff'}},
+    series:[{data:estQtd, type:'bar', itemStyle:{color:'#1abc9c'}, label:{show:true, color:'#fff'}}]
+  });
+} else {
+  document.getElementById('chartEstoque').innerHTML="<p style='text-align:center;color:#aaa;'>📦 Nenhum produto no estoque</p>";
+}
+
+// =================== 🍔 PRODUTOS MAIS VENDIDOS ===================
 let produtos={};
-dados.pedidos.forEach(p=>{ produtos[p.produto]=(produtos[p.produto]||0)+p.valor; });
+dados.vendas.forEach(v=>{
+  let pedidosMesa=dados.pedidos.filter(p=>p.mesa==v.mesa); // já removidos, mas vamos pegar por registro
+});
+dados.pedidos.forEach(p=>{
+  produtos[p.produto]=(produtos[p.produto]||0)+p.valor;
+});
 echarts.init(document.getElementById('chartProdutos')).setOption({
-  title:{text:"🍔 Produtos/Serviços mais vendidos", textStyle:{color:'#d4af37'}},
+  title:{text:"🍔 Produtos Mais Vendidos", textStyle:{color:'#d4af37'}},
   series:[{type:'pie', radius:['40%','70%'],
     data:Object.keys(produtos).map(k=>({name:k,value:produtos[k]})),
     itemStyle:{shadowBlur:15,shadowColor:'#000'}, label:{color:'#fff'}}]
 });
 
-// Receita ao longo do tempo
+// =================== 💳 FORMAS DE PAGAMENTO ===================
+let pagamentos={};
+dados.vendas.forEach(v=>{
+  pagamentos[v.pagamento]=(pagamentos[v.pagamento]||0)+v.total;
+});
+echarts.init(document.getElementById('chartPagamentos')).setOption({
+  title:{text:"💳 Formas de Pagamento", textStyle:{color:'#d4af37'}},
+  tooltip:{trigger:'item'},
+  legend:{textStyle:{color:'#fff'}},
+  series:[{type:'pie', radius:['40%','70%'],
+    data:Object.keys(pagamentos).map(k=>({name:k,value:pagamentos[k]})),
+    itemStyle:{shadowBlur:15,shadowColor:'#000'},
+    label:{color:'#fff'}
+  }]
+});
+
+// =================== 📈 EVOLUÇÃO NO TEMPO ===================
 let porData={};
-dados.pedidos.forEach(p=>{ porData[p.data]=(porData[p.data]||0)+p.valor; });
+dados.vendas.forEach(v=>{
+  porData[v.data]=(porData[v.data]||0)+v.total;
+});
 echarts.init(document.getElementById('chartTempo')).setOption({
   title:{text:"📈 Receita ao Longo do Tempo", textStyle:{color:'#d4af37'}},
   xAxis:{type:'category', data:Object.keys(porData), axisLabel:{color:'#fff'}},
   yAxis:{type:'value', axisLabel:{color:'#fff'}},
   series:[{data:Object.values(porData), type:'line', smooth:true,
-    itemStyle:{color:'#e74c3c'}, areaStyle:{color:'rgba(231,76,60,0.4)'}}]
+    itemStyle:{color:'#e74c3c'},
+    areaStyle:{color:'rgba(231,76,60,0.4)'}
+  }]
 });
 </script>
 
