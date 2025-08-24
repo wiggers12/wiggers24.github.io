@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comanda Digital - Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin:0; font-family:'Poppins',sans-serif; background:#0d0d0d; color:white; }
+    header { background:linear-gradient(90deg,#8e44ad,#b8860b); padding:15px; font-size:22px; font-weight:700; text-align:center; }
+    .chart-card { background:#1a1a1a; border-radius:12px; padding:15px; margin:20px auto; box-shadow:0 4px 20px rgba(0,0,0,0.6); max-width:1200px; }
+    .chart { width:100%; height:400px; }
+  </style>
+</head>
+<body>
+<header>📊 Dashboard & Caixa</header>
+
+<div class="chart-card"><div id="chartVendas" class="chart"></div></div>
+<div class="chart-card"><div id="chartProdutos" class="chart"></div></div>
+<div class="chart-card"><div id="chartTempo" class="chart"></div></div>
+
+<script>
+let dados = JSON.parse(localStorage.getItem("comandaDigital")) || {mesas:[], pedidos:[], vendas:[]};
+
+// Vendas por Mesa
+let totalPorMesa={};
+dados.pedidos.forEach(p=>{ totalPorMesa[p.mesa]=(totalPorMesa[p.mesa]||0)+p.valor; });
+echarts.init(document.getElementById('chartVendas')).setOption({
+  title:{text:"💵 Vendas por Mesa", textStyle:{color:'#d4af37'}},
+  xAxis:{type:'category', data:Object.keys(totalPorMesa), axisLabel:{color:'#fff'}},
+  yAxis:{type:'value', axisLabel:{color:'#fff'}},
+  series:[{data:Object.values(totalPorMesa), type:'bar', itemStyle:{color:'#8e44ad'}, label:{show:true,color:'#fff'}}]
+});
+
+// Produtos mais vendidos
+let produtos={};
+dados.pedidos.forEach(p=>{ produtos[p.produto]=(produtos[p.produto]||0)+p.valor; });
+echarts.init(document.getElementById('chartProdutos')).setOption({
+  title:{text:"🍔 Produtos/Serviços mais vendidos", textStyle:{color:'#d4af37'}},
+  series:[{type:'pie', radius:['40%','70%'],
+    data:Object.keys(produtos).map(k=>({name:k,value:produtos[k]})),
+    itemStyle:{shadowBlur:15,shadowColor:'#000'}, label:{color:'#fff'}}]
+});
+
+// Receita ao longo do tempo
+let porData={};
+dados.pedidos.forEach(p=>{ porData[p.data]=(porData[p.data]||0)+p.valor; });
+echarts.init(document.getElementById('chartTempo')).setOption({
+  title:{text:"📈 Receita ao Longo do Tempo", textStyle:{color:'#d4af37'}},
+  xAxis:{type:'category', data:Object.keys(porData), axisLabel:{color:'#fff'}},
+  yAxis:{type:'value', axisLabel:{color:'#fff'}},
+  series:[{data:Object.values(porData), type:'line', smooth:true,
+    itemStyle:{color:'#e74c3c'}, areaStyle:{color:'rgba(231,76,60,0.4)'}}]
+});
+</script>
+
+</body>
+</html>
