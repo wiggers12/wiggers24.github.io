@@ -1,6 +1,49 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+<head><!DOCTYPE html>
+<html lang="pt-BR">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comanda Digital - Home</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin:0; font-family:'Poppins',sans-serif; background:#0d0d0d; color:white; text-align:center; }
+    header { background:linear-gradient(90deg,#8e44ad,#b8860b); padding:15px; font-size:22px; font-weight:700; }
+    .splash { position:fixed; top:0; left:0; width:100%; height:100%;
+      background:linear-gradient(135deg,#0d0d0d,#8e44ad,#b8860b);
+      display:flex; align-items:center; justify-content:center; flex-direction:column;
+      font-size:32px; font-weight:700; color:#fff; z-index:9999; }
+    .home { display:none; padding:40px; }
+    .btn { display:block; margin:20px auto; padding:20px; width:250px; border-radius:12px;
+      background:#1a1a1a; color:#fff; font-weight:600; text-decoration:none; transition:0.3s; }
+    .btn:hover { background:#8e44ad; transform:scale(1.05); }
+  </style>
+</head>
+<body>
+
+<div id="splash" class="splash">
+  🍽️ <br> <small style="font-size:18px;">Controle total, zero prejuízo</small>
+</div>
+
+<header>📋 Comanda Digital</header>
+
+<div id="home" class="home">
+  <a class="btn" href="mesas.html">📋 Mesas</a>
+  <a class="btn" href="pedidos.html">🍔 Pedidos</a>
+  <a class="btn" href="dashboard.html">📊 Dashboard & Caixa</a>
+  <a class="btn" href="admin.html">⚙️ Painel Admin</a>
+</div>
+
+<script>
+  setTimeout(()=>{
+    document.getElementById("splash").style.display="none";
+    document.getElementById("home").style.display="block";
+  },2000);
+</script>
+
+</body>
+</html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Comanda Digital - Home</title>
