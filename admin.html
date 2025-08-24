@@ -12,7 +12,8 @@
     .mesa-title { font-size:20px; font-weight:700; margin-bottom:10px; color:#d4af37; }
     ul { list-style:none; padding:0; margin:0; }
     li { margin:5px 0; }
-    button { margin-top:10px; padding:10px 15px; border:none; border-radius:8px; font-weight:600; cursor:pointer; background:#8e44ad; color:#fff; }
+    select, input { margin:5px 0; padding:8px; border-radius:6px; border:none; background:#2c2c2c; color:white; width:100%; }
+    button { margin-top:10px; padding:10px 15px; border:none; border-radius:8px; font-weight:600; cursor:pointer; background:#8e44ad; color:#fff; width:100%; }
     button:hover { background:#b8860b; }
     .vazio { text-align:center; margin:30px; font-size:18px; color:#aaa; }
   </style>
@@ -23,7 +24,9 @@
 <div id="listaMesas"></div>
 
 <script>
-let dados = JSON.parse(localStorage.getItem("comandaDigital")) || {mesas:[], pedidos:[], vendas:[], financeiro:{entradas:0,saidas:0,saldo:0}};
+let dados = JSON.parse(localStorage.getItem("comandaDigital")) || {
+  mesas:[], pedidos:[], vendas:[], financeiro:{entradas:0,saidas:0,saldo:0}, estoque:[]
+};
 
 function salvar(){ localStorage.setItem("comandaDigital", JSON.stringify(dados)); }
 
@@ -48,7 +51,7 @@ function listarMesas(){
     let lista=document.createElement("ul");
     pedidosMesa.forEach(p=>{
       let li=document.createElement("li");
-      li.textContent=`${p.produto} - R$ ${p.valor}`;
+      li.textContent=`${p.produto} - R$ ${p.valor.toFixed(2)}`;
       lista.appendChild(li);
     });
     if(pedidosMesa.length===0){
@@ -56,13 +59,30 @@ function listarMesas(){
       li.textContent="(Sem pedidos lançados)";
       lista.appendChild(li);
     }
+    card.appendChild(lista);
+
+    // Formas de pagamento
+    let select=document.createElement("select");
+    select.id="pagamento_"+m.id;
+    select.innerHTML=`
+      <option value="Dinheiro">💵 Dinheiro</option>
+      <option value="Pix">⚡ Pix</option>
+      <option value="Débito">💳 Débito</option>
+      <option value="Crédito">💳 Crédito</option>
+    `;
+    card.appendChild(select);
+
+    // Campo valor recebido (só pra Dinheiro)
+    let input=document.createElement("input");
+    input.type="number"; input.placeholder="Valor Recebido (se Dinheiro)";
+    input.id="recebido_"+m.id;
+    card.appendChild(input);
 
     let btn=document.createElement("button");
     btn.textContent="✅ Encerrar Mesa";
-    btn.onclick=()=>encerrarMesa(m.id, total);
-
-    card.appendChild(lista);
+    btn.onclick=()=>encerrarMesa(m.id,total);
     card.appendChild(btn);
+
     div.appendChild(card);
   });
 }
@@ -70,22 +90,35 @@ function listarMesas(){
 function encerrarMesa(id,total){
   let mesa=dados.mesas.find(m=>m.id===id);
   let pedidosMesa=dados.pedidos.filter(p=>p.mesa==id);
+  let pagamento=document.getElementById("pagamento_"+id).value;
+  let recebido=parseFloat(document.getElementById("recebido_"+id).value)||0;
+  let troco=0;
 
   if(!mesa) return;
 
+  if(pagamento==="Dinheiro" && recebido>=total){
+    troco=recebido-total;
+    dados.financeiro.saidas+=troco; // troco sai do caixa
+  }
+
   // registrar venda
-  dados.vendas.push({mesa:id, total, data:new Date().toLocaleDateString()});
+  dados.vendas.push({mesa:id, total, pagamento, troco, data:new Date().toLocaleDateString()});
   dados.financeiro.entradas+=total;
-  dados.financeiro.saldo+=total;
+  dados.financeiro.saldo+=total-troco;
+
+  // atualizar estoque
+  pedidosMesa.forEach(p=>{
+    let item=dados.estoque.find(e=>e.nome===p.produto);
+    if(item && item.qtd>0){ item.qtd--; }
+  });
 
   // fechar mesa
   mesa.status="fechada";
-
   // remover pedidos
   dados.pedidos=dados.pedidos.filter(p=>p.mesa!=id);
 
   salvar();
-  alert(`✅ Mesa ${id} encerrada com sucesso! Total: R$ ${total.toFixed(2)}`);
+  alert(`✅ Mesa ${id} encerrada! Total: R$${total.toFixed(2)} Troco: R$${troco.toFixed(2)}`);
   listarMesas();
 }
 
