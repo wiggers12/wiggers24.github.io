@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comanda Digital - Garçom</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin:0; font-family:'Poppins',sans-serif; background:#0d0d0d; color:white; text-align:center; }
+    header { background:linear-gradient(90deg,#8e44ad,#b8860b); padding:15px; font-size:22px; font-weight:700; }
+    section { background:#1a1a1a; margin:20px auto; padding:20px; border-radius:10px; max-width:600px; box-shadow:0 4px 10px rgba(0,0,0,0.6); }
+    label { display:block; margin:10px 0 5px; text-align:left; color:#d4af37; font-weight:600; }
+    input, select { padding:10px; border-radius:6px; border:none; width:100%; background:#2c2c2c; color:white; }
+    button { margin-top:10px; padding:12px; border:none; border-radius:8px; font-weight:600; cursor:pointer; background:#8e44ad; color:#fff; width:100%; }
+    button:hover { background:#b8860b; }
+    .lista { margin-top:20px; }
+    .item { background:#2c2c2c; padding:10px; border-radius:6px; margin:5px 0; text-align:left; }
+  </style>
+</head>
+<body>
+<header>🧑‍🍳 Controle de Garçom</header>
+
+<section>
+  <h2>➕ Registrar Garçom</h2>
+  <label>Nome do Garçom:</label>
+  <input type="text" id="nomeGarcom">
+  <button onclick="adicionarGarcom()">Adicionar</button>
+</section>
+
+<section>
+  <h2>📋 Garçons Cadastrados</h2>
+  <div id="listaGarcons"></div>
+</section>
+
+<script>
+let dados = JSON.parse(localStorage.getItem("comandaDigital")) || 
+  {mesas:[], pedidos:[], vendas:[], financeiro:{entradas:0,saidas:0,saldo:0}, estoque:[], garcons:[]};
+
+function salvar(){ localStorage.setItem("comandaDigital", JSON.stringify(dados)); }
+
+// ➕ Adicionar garçom
+function adicionarGarcom(){
+  let nome=document.getElementById("nomeGarcom").value.trim();
+  if(!nome){ alert("Digite o nome do garçom!"); return; }
+  dados.garcons.push({id:Date.now(), nome});
+  salvar();
+  listarGarcons();
+  document.getElementById("nomeGarcom").value="";
+}
+
+// 📋 Listar garçons
+function listarGarcons(){
+  let div=document.getElementById("listaGarcons");
+  div.innerHTML="";
+  if(dados.garcons.length===0){
+    div.innerHTML="<p>Nenhum garçom cadastrado.</p>";
+    return;
+  }
+  dados.garcons.forEach(g=>{
+    let el=document.createElement("div");
+    el.className="item";
+    el.innerText=`${g.nome}`;
+    div.appendChild(el);
+  });
+}
+
+listarGarcons();
+</script>
+</body>
+</html>
