@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comanda Digital - Estoque</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin:0; font-family:'Poppins',sans-serif; background:#0d0d0d; color:white; text-align:center; }
+    header { background:linear-gradient(90deg,#8e44ad,#b8860b); padding:15px; font-size:22px; font-weight:700; }
+    section { background:#1a1a1a; margin:20px auto; padding:20px; border-radius:10px; max-width:600px; box-shadow:0 4px 10px rgba(0,0,0,0.6); }
+    label { display:block; margin:10px 0 5px; text-align:left; color:#d4af37; font-weight:600; }
+    input { padding:10px; border-radius:6px; border:none; width:100%; background:#2c2c2c; color:white; }
+    button { margin-top:10px; padding:12px; border:none; border-radius:8px; font-weight:600; cursor:pointer; background:#8e44ad; color:#fff; width:100%; }
+    button:hover { background:#b8860b; }
+    .lista { margin-top:20px; }
+    .item { background:#2c2c2c; padding:10px; border-radius:6px; margin:5px 0; display:flex; justify-content:space-between; align-items:center; }
+    .acoes button { margin-left:5px; padding:6px 10px; font-size:12px; }
+  </style>
+</head>
+<body>
+<header>📦 Gestão de Estoque</header>
+
+<section>
+  <h2>➕ Adicionar Produto / Serviço</h2>
+  <label>Nome:</label>
+  <input type="text" id="nome">
+  
+  <label>Valor Unitário (R$):</label>
+  <input type="number" id="valor">
+  
+  <label>Quantidade (deixe vazio se for serviço):</label>
+  <input type="number" id="qtd">
+  
+  <button onclick="adicionarProduto()">Adicionar</button>
+</section>
+
+<section class="lista">
+  <h2>📋 Produtos / Serviços</h2>
+  <div id="listaEstoque"></div>
+</section>
+
+<script>
+let dados = JSON.parse(localStorage.getItem("comandaDigital")) || {mesas:[], pedidos:[], vendas:[], financeiro:{entradas:0,saidas:0,saldo:0}, estoque:[]};
+function salvar(){ localStorage.setItem("comandaDigital", JSON.stringify(dados)); }
+
+// Adicionar Produto/Serviço
+function adicionarProduto(){
+  let nome=document.getElementById("nome").value;
+  let valor=parseFloat(document.getElementById("valor").value)||0;
+  let qtd=parseInt(document.getElementById("qtd").value)||0;
+
+  if(!nome || valor<=0){ alert("Preencha o nome e o valor!"); return; }
+
+  // Verificar se já existe
+  let existente=dados.estoque.find(p=>p.nome===nome);
+  if(existente){
+    existente.valor=valor;
+    existente.qtd=qtd;
+  } else {
+    dados.estoque.push({nome, valor, qtd});
+  }
+
+  salvar();
+  listarEstoque();
+
+  document.getElementById("nome").value="";
+  document.getElementById("valor").value="";
+  document.getElementById("qtd").value="";
+}
+
+// Remover
+function removerProduto(nome){
+  dados.estoque=dados.estoque.filter(p=>p.nome!==nome);
+  salvar();
+  listarEstoque();
+}
+
+// Listar
+function listarEstoque(){
+  let div=document.getElementById("listaEstoque");
+  div.innerHTML="";
+  if(dados.estoque.length===0){
+    div.innerHTML="<p>Nenhum produto/serviço cadastrado.</p>";
+    return;
+  }
+
+  dados.estoque.forEach(p=>{
+    let el=document.createElement("div");
+    el.className="item";
+    el.innerHTML=`
+      <span>${p.nome} - R$ ${p.valor} (${p.qtd>0?p.qtd+" un":"serviço"})</span>
+      <div class="acoes">
+        <button onclick="removerProduto('${p.nome}')">🗑 Remover</button>
+      </div>
+    `;
+    div.appendChild(el);
+  });
+}
+
+listarEstoque();
+</script>
+</body>
+</html>
