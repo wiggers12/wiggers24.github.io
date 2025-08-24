@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comanda Digital - Pedidos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin:0; font-family:'Poppins',sans-serif; background:#0d0d0d; color:white; text-align:center; }
+    header { background:linear-gradient(90deg,#8e44ad,#b8860b); padding:15px; font-size:22px; font-weight:700; }
+    select, input { margin:10px; padding:10px; border-radius:6px; border:none; background:#2c2c2c; color:white; }
+    .btn { margin:20px auto; padding:12px; border:none; border-radius:8px; font-weight:600; cursor:pointer; background:#8e44ad; color:#fff; }
+    .btn:hover { background:#b8860b; }
+    .pedido { padding:10px; margin:5px auto; background:#1a1a1a; border-radius:6px; }
+  </style>
+</head>
+<body>
+<header>🍔 Lançar Pedidos</header>
+
+<div>
+  <label>Mesa:</label>
+  <select id="mesaSelect"></select>
+  <br>
+  <label>Produto:</label>
+  <input type="text" id="produto">
+  <label>Valor (R$):</label>
+  <input type="number" id="valor">
+  <button class="btn" onclick="adicionarPedido()">➕ Adicionar Pedido</button>
+</div>
+
+<h3>Pedidos Registrados</h3>
+<div id="listaPedidos"></div>
+
+<script>
+let dados = JSON.parse(localStorage.getItem("comandaDigital")) || {mesas:[], pedidos:[], vendas:[]};
+function salvar(){ localStorage.setItem("comandaDigital", JSON.stringify(dados)); }
+
+function atualizarMesas(){
+  let sel=document.getElementById("mesaSelect");
+  sel.innerHTML="";
+  dados.mesas.filter(m=>m.status==="aberta").forEach(m=>{
+    let opt=document.createElement("option");
+    opt.value=m.id;
+    opt.textContent="Mesa "+m.id;
+    sel.appendChild(opt);
+  });
+}
+
+function adicionarPedido(){
+  let mesa=document.getElementById("mesaSelect").value;
+  let produto=document.getElementById("produto").value;
+  let valor=parseFloat(document.getElementById("valor").value)||0;
+  if(!mesa || !produto || valor<=0){ alert("Preencha todos os campos!"); return; }
+  dados.pedidos.push({mesa, produto, valor, data:new Date().toLocaleDateString()});
+  salvar();
+  listarPedidos();
+  document.getElementById("produto").value="";
+  document.getElementById("valor").value="";
+}
+
+function listarPedidos(){
+  let div=document.getElementById("listaPedidos");
+  div.innerHTML="";
+  dados.pedidos.forEach(p=>{
+    let el=document.createElement("div");
+    el.className="pedido";
+    el.innerText="Mesa "+p.mesa+" - "+p.produto+" - R$ "+p.valor;
+    div.appendChild(el);
+  });
+}
+
+atualizarMesas();
+listarPedidos();
+</script>
+</body>
+</html>
