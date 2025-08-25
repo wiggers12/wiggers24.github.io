@@ -8,63 +8,91 @@
   <style>
     body { margin:0; font-family:'Poppins',sans-serif; background:#0d0d0d; color:white; }
     header { background:linear-gradient(90deg,#8e44ad,#b8860b); padding:15px; font-size:22px; font-weight:700; text-align:center; }
-    .mesa-card { background:#1a1a1a; margin:15px; padding:15px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.6); }
+    .mesa-card, .relatorio-card { background:#1a1a1a; margin:15px; padding:15px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.6); }
     .mesa-title { font-size:20px; font-weight:700; margin-bottom:10px; color:#d4af37; }
     ul { list-style:none; padding:0; margin:0; }
     li { margin:5px 0; }
-    select, input { margin:5px 0; padding:8px; border-radius:6px; border:none; background:#2c2c2c; color:white; width:100%; }
+    select, input, .toggle-btn { margin:5px 0; padding:8px; border-radius:6px; border:none; background:#2c2c2c; color:white; width:100%; }
     button { margin-top:10px; padding:10px 15px; border:none; border-radius:8px; font-weight:600; cursor:pointer; background:#8e44ad; color:#fff; width:100%; }
     button:hover { background:#b8860b; }
     .vazio { text-align:center; margin:30px; font-size:18px; color:#aaa; }
+    .relatorio-item { padding:10px; border-bottom:1px solid #333; }
+    .relatorio-item:last-child { border-bottom:none; }
+    .toggle-btn { background:#3a3a3a; text-align:center; cursor:pointer; }
+    .content-section { display: none; }
+    .content-section.active { display: block; }
   </style>
 </head>
 <body>
 <header>⚙️ Painel Administrativo</header>
 
-<div id="listaMesas"></div>
+<div class="toggle-btn" onclick="toggleSection('mesasAbertas')">Mesas Abertas</div>
+<div id="mesasAbertas" class="content-section active">
+  <div id="listaMesas"></div>
+</div>
+
+<div class="toggle-btn" onclick="toggleSection('relatorioDiario')">Relatório do Dia</div>
+<div id="relatorioDiario" class="content-section">
+  <div id="listaRelatorio"></div>
+</div>
 
 <script>
 let dados = JSON.parse(localStorage.getItem("comandaDigital")) || {
-  mesas:[], pedidos:[], vendas:[], financeiro:{entradas:0,saidas:0,saldo:0}, estoque:[]
+  mesas:[], pedidos:[], vendas:[], financeiro:{entradas:0,saidas:0,saldo:0}, estoque:[], garcons:[]
 };
 
 function salvar(){ localStorage.setItem("comandaDigital", JSON.stringify(dados)); }
 
-function listarMesas(){
-  let div=document.getElementById("listaMesas");
-  div.innerHTML="";
-  let abertas=dados.mesas.filter(m=>m.status==="aberta");
+// Funções para alternar entre seções
+function toggleSection(sectionId) {
+    const sections = document.querySelectorAll('.content-section');
+    sections.forEach(section => {
+        section.classList.remove('active');
+    });
+    document.getElementById(sectionId).classList.add('active');
+    
+    if (sectionId === 'relatorioDiario') {
+        gerarRelatorioDiario();
+    }
+}
 
-  if(abertas.length===0){
-    div.innerHTML="<p class='vazio'>✅ Nenhuma mesa aberta no momento</p>";
+function listarMesas(){
+  let div = document.getElementById("listaMesas");
+  div.innerHTML = "";
+  let abertas = dados.mesas.filter(m => m.status === "aberta");
+
+  if(abertas.length === 0){
+    div.innerHTML = "<p class='vazio'>✅ Nenhuma mesa aberta no momento</p>";
     return;
   }
 
-  abertas.forEach(m=>{
-    let pedidosMesa=dados.pedidos.filter(p=>p.mesa==m.id);
-    let total=pedidosMesa.reduce((s,p)=>s+p.valor,0);
+  abertas.forEach(m => {
+    let pedidosMesa = dados.pedidos.filter(p => p.mesa == m.id);
+    let total = pedidosMesa.reduce((s, p) => s + p.valor, 0);
 
-    let card=document.createElement("div");
-    card.className="mesa-card";
-    card.innerHTML=`<div class="mesa-title">🍽️ Mesa ${m.id} - Total: R$ ${total.toFixed(2)}</div>`;
+    let card = document.createElement("div");
+    card.className = "mesa-card";
 
-    let lista=document.createElement("ul");
-    pedidosMesa.forEach(p=>{
-      let li=document.createElement("li");
-      li.textContent=`${p.produto} - R$ ${p.valor.toFixed(2)}`;
+    // Adicionado: Nome do Garçom
+    const garcomNome = m.garcomNome ? ` - ${m.garcomNome}` : '';
+    card.innerHTML = `<div class="mesa-title">🍽️ Mesa ${m.id}${garcomNome} - Total: R$ ${total.toFixed(2)}</div>`;
+
+    let lista = document.createElement("ul");
+    pedidosMesa.forEach(p => {
+      let li = document.createElement("li");
+      li.textContent = `${p.produto} - R$ ${p.valor.toFixed(2)}`;
       lista.appendChild(li);
     });
-    if(pedidosMesa.length===0){
-      let li=document.createElement("li");
-      li.textContent="(Sem pedidos lançados)";
+    if(pedidosMesa.length === 0){
+      let li = document.createElement("li");
+      li.textContent = "(Sem pedidos lançados)";
       lista.appendChild(li);
     }
     card.appendChild(lista);
 
-    // Formas de pagamento
-    let select=document.createElement("select");
-    select.id="pagamento_"+m.id;
-    select.innerHTML=`
+    let select = document.createElement("select");
+    select.id = "pagamento_" + m.id;
+    select.innerHTML = `
       <option value="Dinheiro">💵 Dinheiro</option>
       <option value="Pix">⚡ Pix</option>
       <option value="Débito">💳 Débito</option>
@@ -72,56 +100,114 @@ function listarMesas(){
     `;
     card.appendChild(select);
 
-    // Campo valor recebido (só pra Dinheiro)
-    let input=document.createElement("input");
-    input.type="number"; input.placeholder="Valor Recebido (se Dinheiro)";
-    input.id="recebido_"+m.id;
+    let input = document.createElement("input");
+    input.type = "number"; input.placeholder = "Valor Recebido (se Dinheiro)";
+    input.id = "recebido_" + m.id;
     card.appendChild(input);
 
-    let btn=document.createElement("button");
-    btn.textContent="✅ Encerrar Mesa";
-    btn.onclick=()=>encerrarMesa(m.id,total);
+    let btn = document.createElement("button");
+    btn.textContent = "✅ Encerrar Mesa";
+    btn.onclick = () => encerrarMesa(m.id, total);
     card.appendChild(btn);
 
     div.appendChild(card);
   });
 }
 
-function encerrarMesa(id,total){
-  let mesa=dados.mesas.find(m=>m.id===id);
-  let pedidosMesa=dados.pedidos.filter(p=>p.mesa==id);
-  let pagamento=document.getElementById("pagamento_"+id).value;
-  let recebido=parseFloat(document.getElementById("recebido_"+id).value)||0;
-  let troco=0;
+function encerrarMesa(id, total){
+  let mesa = dados.mesas.find(m => m.id === id);
+  let pedidosMesa = dados.pedidos.filter(p => p.mesa == id);
+  let pagamento = document.getElementById("pagamento_" + id).value;
+  let recebido = parseFloat(document.getElementById("recebido_" + id).value) || 0;
+  let troco = 0;
 
   if(!mesa) return;
 
-  if(pagamento==="Dinheiro" && recebido>=total){
-    troco=recebido-total;
-    dados.financeiro.saidas+=troco; // troco sai do caixa
+  if(pagamento === "Dinheiro" && recebido >= total){
+    troco = recebido - total;
+    dados.financeiro.saidas += troco;
   }
 
-  // registrar venda
-  dados.vendas.push({mesa:id, total, pagamento, troco, data:new Date().toLocaleDateString()});
-  dados.financeiro.entradas+=total;
-  dados.financeiro.saldo+=total-troco;
+  const dataVenda = new Date().toLocaleDateString('pt-BR');
+  
+  // Incluído: Nome do garçom
+  dados.vendas.push({
+    mesa: id,
+    total,
+    pagamento,
+    troco,
+    data: dataVenda,
+    garcom: mesa.garcomNome || "Não informado"
+  });
+  dados.financeiro.entradas += total;
+  dados.financeiro.saldo += total - troco;
 
-  // atualizar estoque
-  pedidosMesa.forEach(p=>{
-    let item=dados.estoque.find(e=>e.nome===p.produto);
-    if(item && item.qtd>0){ item.qtd--; }
+  pedidosMesa.forEach(p => {
+    let item = dados.estoque.find(e => e.nome === p.produto);
+    if(item && item.qtd > 0){ item.qtd--; }
   });
 
-  // fechar mesa
-  mesa.status="fechada";
-  // remover pedidos
-  dados.pedidos=dados.pedidos.filter(p=>p.mesa!=id);
+  mesa.status = "fechada";
+  dados.pedidos = dados.pedidos.filter(p => p.mesa != id);
 
   salvar();
   alert(`✅ Mesa ${id} encerrada! Total: R$${total.toFixed(2)} Troco: R$${troco.toFixed(2)}`);
   listarMesas();
 }
 
+// Nova função para gerar relatório do dia
+function gerarRelatorioDiario() {
+  const divRelatorio = document.getElementById('listaRelatorio');
+  divRelatorio.innerHTML = "";
+  const hoje = new Date().toLocaleDateString('pt-BR');
+  const vendasDoDia = dados.vendas.filter(v => v.data === hoje);
+  const totalDiario = vendasDoDia.reduce((sum, v) => sum + v.total, 0);
+  const totalTroco = vendasDoDia.reduce((sum, v) => sum + v.troco, 0);
+  
+  if (vendasDoDia.length === 0) {
+    divRelatorio.innerHTML = "<p class='vazio'>Nenhuma venda registrada para hoje.</p>";
+    return;
+  }
+
+  // Resumo do dia
+  const resumoDiv = document.createElement('div');
+  resumoDiv.innerHTML = `
+    <div class="relatorio-card">
+        <div class="mesa-title">Relatório de Vendas - Hoje</div>
+        <p>Total de Mesas Encerradas: <b>${vendasDoDia.length}</b></p>
+        <p>Valor Total Recebido: <b>R$ ${totalDiario.toFixed(2)}</b></p>
+        <p>Total de Troco Entregue: <b>R$ ${totalTroco.toFixed(2)}</b></p>
+    </div>
+  `;
+  divRelatorio.appendChild(resumoDiv);
+
+  // Lista de mesas encerradas
+  vendasDoDia.forEach(venda => {
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'relatorio-item';
+    itemDiv.innerHTML = `
+      <b>Mesa ${venda.mesa}</b><br>
+      Total: R$ ${venda.total.toFixed(2)}<br>
+      Pagamento: ${venda.pagamento}<br>
+      Garçom: ${venda.garcom}<br>
+      Troco: R$ ${venda.troco.toFixed(2)}
+    `;
+    divRelatorio.appendChild(itemDiv);
+  });
+}
+
+// Adicionada a propriedade garçomNome ao criar a mesa
+// (Esta parte precisa ser adicionada no seu código de `mesas.html` ou no unificado)
+// Exemplo:
+// function abrirMesa(garcomNome){
+//   let id = dados.mesas.length + 1;
+//   dados.mesas.push({id, status:"aberta", garcomNome});
+//   salvar();
+//   listarMesas();
+//   atualizarMesas();
+// }
+
+// Inicialização
 listarMesas();
 </script>
 </body>
