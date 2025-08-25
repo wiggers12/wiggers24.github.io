@@ -12,7 +12,7 @@
     header { background:linear-gradient(90deg,#8e44ad,#b8860b); padding:20px; font-size:26px; font-weight:700; color:white; }
     section { margin:30px auto; max-width:1000px; background:#1a1a1a; border-radius:12px; padding:25px; box-shadow:0 4px 20px rgba(0,0,0,0.6); }
     h2 { color:#d4af37; margin-bottom:20px; }
-    .numero { font-size:30px; font-weight:bold; color:#f1c40f; margin:10px 0; }
+    .numero { font-size:28px; font-weight:bold; color:#f1c40f; margin:10px 0; }
     .chart { width:100%; height:400px; }
   </style>
 </head>
@@ -23,13 +23,13 @@
 <section>
   <h2>Resumo Executivo</h2>
   <p>Um simples copo de água não pago pode custar milhares de reais ao restaurante.</p>
-  <p><strong>Prejuízo anual estimado: R$ 36.000,00 💸</strong></p>
+  <p><strong>Prejuízo anual estimado: R$ 14.400,00 💸</strong></p>
 </section>
 
 <section>
   <h2>Cenário 1 - Cliente não paga 1 água de R$5</h2>
   <div id="cen1" class="chart"></div>
-  <div class="numero">Prejuízo Anual: R$ 18.000,00</div>
+  <div class="numero">Prejuízo Anual: R$ 1.800,00</div>
 </section>
 
 <section>
@@ -41,21 +41,21 @@
 <section>
   <h2>Cenário 3 - Comanda perdida com 3 águas de R$5</h2>
   <div id="cen3" class="chart"></div>
-  <div class="numero">Prejuízo Anual: R$ 10.800,00</div>
+  <div class="numero">Prejuízo Anual: R$ 5.400,00</div>
 </section>
 
 <section>
   <h2>📌 Comparativo Total Anual</h2>
   <div id="pizza" class="chart"></div>
-  <div class="numero">Total: R$ 36.000,00</div>
+  <div class="numero">Total: R$ 14.400,00</div>
 </section>
 
 <script>
-// Dados dos cenários
+// Dados corrigidos
 const dados = {
-  cen1: { valores:[5,50,1500,18000], labels:["Por Cliente","Dia","Mês","Ano"] },
+  cen1: { valores:[5,35,150,1800], labels:["Dia","Semana","Mês","Ano"] },
   cen2: { valores:[20,140,600,7200], labels:["Dia","Semana","Mês","Ano"] },
-  cen3: { valores:[15,30,900,10800], labels:["Por Comanda","Dia","Mês","Ano"] }
+  cen3: { valores:[15,105,450,5400], labels:["Dia","Semana","Mês","Ano"] }
 };
 
 // Função para gráfico de barras
@@ -75,7 +75,7 @@ function renderBar(id, labels, valores, titulo){
   });
 }
 
-// Renderizar gráficos de barras
+// Renderizar gráficos
 renderBar("cen1",dados.cen1.labels,dados.cen1.valores,"Prejuízo Cenário 1");
 renderBar("cen2",dados.cen2.labels,dados.cen2.valores,"Prejuízo Cenário 2");
 renderBar("cen3",dados.cen3.labels,dados.cen3.valores,"Prejuízo Cenário 3");
@@ -89,9 +89,9 @@ pizza.setOption({
     type:'pie',
     radius:['40%','70%'],
     data:[
-      {name:'Cliente não paga água', value:18000},
+      {name:'Cliente não paga água', value:1800},
       {name:'Garçom esquece', value:7200},
-      {name:'Comanda perdida', value:10800}
+      {name:'Comanda perdida', value:5400}
     ],
     label:{color:'#fff', formatter:'{b}: R${c}'}
   }],
