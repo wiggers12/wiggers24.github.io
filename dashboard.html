@@ -19,12 +19,13 @@
 <div class="chart-card"><div id="chartFinanceiro" class="chart"></div></div>
 <div class="chart-card"><div id="chartEstoque" class="chart"></div></div>
 <div class="chart-card"><div id="chartProdutos" class="chart"></div></div>
+<div class="chart-card"><div id="chartGarcons" class="chart"></div></div>
 <div class="chart-card"><div id="chartPagamentos" class="chart"></div></div>
 <div class="chart-card"><div id="chartTempo" class="chart"></div></div>
 
 <script>
 let dados = JSON.parse(localStorage.getItem("comandaDigital")) || {
-  mesas:[], pedidos:[], vendas:[], financeiro:{entradas:0,saidas:0,saldo:0}, estoque:[]
+  mesas:[], pedidos:[], vendas:[], financeiro:{entradas:0,saidas:0,saldo:0}, estoque:[], garcons:[]
 };
 
 // =================== 📊 FINANCEIRO ===================
@@ -49,7 +50,7 @@ echarts.init(document.getElementById('chartFinanceiro')).setOption({
 });
 
 // =================== 📦 ESTOQUE ===================
-if(dados.estoque && dados.estoque.length>0){
+if(dados.estoque && dados.estoque.length > 0) {
   let estProdutos=dados.estoque.map(e=>e.nome);
   let estQtd=dados.estoque.map(e=>e.qtd);
 
@@ -65,18 +66,81 @@ if(dados.estoque && dados.estoque.length>0){
 }
 
 // =================== 🍔 PRODUTOS MAIS VENDIDOS ===================
-let produtos={};
-dados.vendas.forEach(v=>{
-  let pedidosMesa=dados.pedidos.filter(p=>p.mesa==v.mesa); // já removidos, mas vamos pegar por registro
+let produtosContagem = {};
+dados.pedidos.forEach(p => {
+  produtosContagem[p.produto] = (produtosContagem[p.produto] || 0) + 1;
 });
-dados.pedidos.forEach(p=>{
-  produtos[p.produto]=(produtos[p.produto]||0)+p.valor;
-});
+
+let produtosVendidos = Object.keys(produtosContagem).map(k => ({
+    name: k,
+    value: produtosContagem[k]
+}));
+
 echarts.init(document.getElementById('chartProdutos')).setOption({
-  title:{text:"🍔 Produtos Mais Vendidos", textStyle:{color:'#d4af37'}},
-  series:[{type:'pie', radius:['40%','70%'],
-    data:Object.keys(produtos).map(k=>({name:k,value:produtos[k]})),
-    itemStyle:{shadowBlur:15,shadowColor:'#000'}, label:{color:'#fff'}}]
+    title: {
+        text: "🍔 Produtos Mais Vendidos (Contagem)",
+        textStyle: {
+            color: '#d4af37'
+        }
+    },
+    tooltip: {
+        trigger: 'item',
+        formatter: "{b}: {c} unidades"
+    },
+    series: [{
+        type: 'pie',
+        radius: ['40%', '70%'],
+        data: produtosVendidos,
+        itemStyle: {
+            shadowBlur: 15,
+            shadowColor: '#000'
+        },
+        label: {
+            color: '#fff'
+        }
+    }]
+});
+
+// =================== 🧑‍🍳 GARÇONS QUE MAIS ATENDEM ===================
+let garconsAtendimentos = {};
+dados.mesas.forEach(m => {
+  if (m.garcomNome) {
+    garconsAtendimentos[m.garcomNome] = (garconsAtendimentos[m.garcomNome] || 0) + 1;
+  }
+});
+
+let garconsData = Object.keys(garconsAtendimentos).map(k => ({
+    name: k,
+    value: garconsAtendimentos[k]
+}));
+
+echarts.init(document.getElementById('chartGarcons')).setOption({
+    title: {
+        text: "🧑‍🍳 Garçons que Mais Atendem",
+        textStyle: {
+            color: '#d4af37'
+        }
+    },
+    tooltip: {
+        trigger: 'item',
+        formatter: "{b}: {c} mesas"
+    },
+    series: [{
+        type: 'pie',
+        radius: '55%',
+        center: ['50%', '60%'],
+        data: garconsData,
+        emphasis: {
+            itemStyle: {
+                shadowBlur: 10,
+                shadowOffsetX: 0,
+                shadowColor: 'rgba(0, 0, 0, 0.5)'
+            }
+        },
+        label: {
+            color: '#fff'
+        }
+    }]
 });
 
 // =================== 💳 FORMAS DE PAGAMENTO ===================
