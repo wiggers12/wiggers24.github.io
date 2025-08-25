@@ -39,8 +39,14 @@
   </section>
 
   <section>
-    <h2>📋 Gestão de Mesas</h2>
+    <h2>➕ Abrir Mesa</h2>
+    <label>Selecione o Garçom:</label>
+    <select id="garcomSelect"></select>
     <button class="btn" onclick="abrirMesa()">➕ Abrir Mesa</button>
+  </section>
+
+  <section>
+    <h2>📋 Mesas Abertas</h2>
     <div id="listaMesas"></div>
   </section>
 
@@ -75,6 +81,7 @@
     salvar();
     listarGarcons();
     document.getElementById("nomeGarcom").value="";
+    atualizarGarcomSelect(); // Atualiza a lista de garçons no select
   }
 
   function listarGarcons(){
@@ -91,14 +98,37 @@
       div.appendChild(el);
     });
   }
+  
+  // Função para popular o select de garçons
+  function atualizarGarcomSelect() {
+      let sel = document.getElementById("garcomSelect");
+      sel.innerHTML = "";
+      if (dados.garcons.length === 0) {
+          sel.innerHTML = "<option value=''>Nenhum garçom</option>";
+          return;
+      }
+      dados.garcons.forEach(g => {
+          let opt = document.createElement("option");
+          opt.value = g.nome;
+          opt.textContent = g.nome;
+          sel.appendChild(opt);
+      });
+  }
 
   // Funções de Mesas
   function abrirMesa(){
+    const garcomNome = document.getElementById("garcomSelect").value;
+    if (!garcomNome) {
+        alert("Por favor, selecione um garçom para abrir a mesa.");
+        return;
+    }
+
     let id = dados.mesas.length + 1;
-    dados.mesas.push({id, status:"aberta"});
+    // Alterado: Adicionado a propriedade 'garcomNome' à mesa
+    dados.mesas.push({id, status:"aberta", garcomNome});
     salvar();
     listarMesas();
-    atualizarMesas(); // Adicionado para atualizar a lista de mesas dos pedidos
+    atualizarMesas(); // Atualiza a lista de mesas dos pedidos
   }
 
   function fecharMesa(id){
@@ -112,7 +142,9 @@
     dados.mesas.forEach(m=>{
       let el=document.createElement("div");
       el.className="mesa "+(m.status==="aberta"?"aberta":"fechada");
-      el.innerHTML=`Mesa ${m.id} - ${m.status.toUpperCase()} ${m.status==="aberta" ? `<button onclick="fecharMesa(${m.id})">Fechar</button>`:""}`;
+      // Alterado: Adicionado o nome do garçom na exibição da mesa
+      const garcomInfo = m.garcomNome ? ` por ${m.garcomNome}` : '';
+      el.innerHTML=`Mesa ${m.id} - ${m.status.toUpperCase()}${garcomInfo} ${m.status==="aberta" ? `<button onclick="fecharMesa(${m.id})">Fechar</button>`:""}`;
       div.appendChild(el);
     });
   }
@@ -124,7 +156,9 @@
     dados.mesas.filter(m=>m.status==="aberta").forEach(m=>{
       let opt=document.createElement("option");
       opt.value=m.id;
-      opt.textContent="Mesa "+m.id;
+      // Alterado: Adicionado o nome do garçom na opção da mesa
+      const garcomInfo = m.garcomNome ? ` (${m.garcomNome})` : '';
+      opt.textContent=`Mesa ${m.id}${garcomInfo}`;
       sel.appendChild(opt);
     });
   }
@@ -184,6 +218,7 @@
   listarPedidos();
   atualizarMesas();
   atualizarProdutos();
+  atualizarGarcomSelect(); // Nova chamada para popular o select de garçons
 </script>
 </body>
 </html>
