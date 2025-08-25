@@ -3,68 +3,187 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Comanda Digital - Garçom</title>
+  <title>Comanda Digital Completa</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     body { margin:0; font-family:'Poppins',sans-serif; background:#0d0d0d; color:white; text-align:center; }
     header { background:linear-gradient(90deg,#8e44ad,#b8860b); padding:15px; font-size:22px; font-weight:700; }
     section { background:#1a1a1a; margin:20px auto; padding:20px; border-radius:10px; max-width:600px; box-shadow:0 4px 10px rgba(0,0,0,0.6); }
-    label { display:block; margin:10px 0 5px; text-align:left; color:#d4af37; font-weight:600; }
-    input, select { padding:10px; border-radius:6px; border:none; width:100%; background:#2c2c2c; color:white; }
+    .btn { margin:20px auto; padding:15px 20px; border:none; border-radius:8px; font-weight:600; cursor:pointer; background:#8e44ad; color:#fff; }
+    .btn:hover { background:#b8860b; }
+    .mesa { padding:15px; margin:10px; border-radius:8px; background:#1a1a1a; }
+    .aberta { border:2px solid #2ecc71; }
+    .fechada { border:2px solid #7f8c8d; opacity:0.6; }
+    select, input { padding:10px; border-radius:6px; border:none; width:100%; background:#2c2c2c; color:white; margin:10px 0; }
     button { margin-top:10px; padding:12px; border:none; border-radius:8px; font-weight:600; cursor:pointer; background:#8e44ad; color:#fff; width:100%; }
     button:hover { background:#b8860b; }
-    .lista { margin-top:20px; }
+    label { display:block; margin:10px 0 5px; text-align:left; color:#d4af37; font-weight:600; }
     .item { background:#2c2c2c; padding:10px; border-radius:6px; margin:5px 0; text-align:left; }
+    .pedido { padding:10px; margin:5px auto; background:#2c2c2c; border-radius:6px; text-align:left; }
   </style>
 </head>
 <body>
-<header>🧑‍🍳 Controle de Garçom</header>
 
-<section>
-  <h2>➕ Registrar Garçom</h2>
-  <label>Nome do Garçom:</label>
-  <input type="text" id="nomeGarcom">
-  <button onclick="adicionarGarcom()">Adicionar</button>
-</section>
+  <header>Comanda Digital Completa</header>
 
-<section>
-  <h2>📋 Garçons Cadastrados</h2>
-  <div id="listaGarcons"></div>
-</section>
+  <section>
+    <h2>🧑‍🍳 Controle de Garçom</h2>
+    <label>Nome do Garçom:</label>
+    <input type="text" id="nomeGarcom">
+    <button onclick="adicionarGarcom()">Adicionar</button>
+  </section>
+
+  <section>
+    <h2>📋 Garçons Cadastrados</h2>
+    <div id="listaGarcons"></div>
+  </section>
+
+  <section>
+    <h2>📋 Gestão de Mesas</h2>
+    <button class="btn" onclick="abrirMesa()">➕ Abrir Mesa</button>
+    <div id="listaMesas"></div>
+  </section>
+
+  <section>
+    <h2>🍔 Lançar Pedidos</h2>
+    <label>Mesa:</label>
+    <select id="mesaSelect"></select>
+    <label>Produto:</label>
+    <select id="produtoSelect"></select>
+    <label>Valor (R$):</label>
+    <input type="number" id="valor">
+    <button class="btn" onclick="adicionarPedido()">➕ Adicionar Pedido</button>
+  </section>
+
+  <section>
+    <h3>Pedidos Registrados</h3>
+    <div id="listaPedidos"></div>
+  </section>
 
 <script>
-let dados = JSON.parse(localStorage.getItem("comandaDigital")) || 
+  let dados = JSON.parse(localStorage.getItem("comandaDigital")) ||
   {mesas:[], pedidos:[], vendas:[], financeiro:{entradas:0,saidas:0,saldo:0}, estoque:[], garcons:[]};
 
-function salvar(){ localStorage.setItem("comandaDigital", JSON.stringify(dados)); }
+  // Funções de utilidade
+  function salvar(){ localStorage.setItem("comandaDigital", JSON.stringify(dados)); }
 
-// ➕ Adicionar garçom
-function adicionarGarcom(){
-  let nome=document.getElementById("nomeGarcom").value.trim();
-  if(!nome){ alert("Digite o nome do garçom!"); return; }
-  dados.garcons.push({id:Date.now(), nome});
-  salvar();
-  listarGarcons();
-  document.getElementById("nomeGarcom").value="";
-}
-
-// 📋 Listar garçons
-function listarGarcons(){
-  let div=document.getElementById("listaGarcons");
-  div.innerHTML="";
-  if(dados.garcons.length===0){
-    div.innerHTML="<p>Nenhum garçom cadastrado.</p>";
-    return;
+  // Funções de Garçom
+  function adicionarGarcom(){
+    let nome=document.getElementById("nomeGarcom").value.trim();
+    if(!nome){ alert("Digite o nome do garçom!"); return; }
+    dados.garcons.push({id:Date.now(), nome});
+    salvar();
+    listarGarcons();
+    document.getElementById("nomeGarcom").value="";
   }
-  dados.garcons.forEach(g=>{
-    let el=document.createElement("div");
-    el.className="item";
-    el.innerText=`${g.nome}`;
-    div.appendChild(el);
-  });
-}
 
-listarGarcons();
+  function listarGarcons(){
+    let div=document.getElementById("listaGarcons");
+    div.innerHTML="";
+    if(dados.garcons.length===0){
+      div.innerHTML="<p>Nenhum garçom cadastrado.</p>";
+      return;
+    }
+    dados.garcons.forEach(g=>{
+      let el=document.createElement("div");
+      el.className="item";
+      el.innerText=`${g.nome}`;
+      div.appendChild(el);
+    });
+  }
+
+  // Funções de Mesas
+  function abrirMesa(){
+    let id = dados.mesas.length + 1;
+    dados.mesas.push({id, status:"aberta"});
+    salvar();
+    listarMesas();
+    atualizarMesas(); // Adicionado para atualizar a lista de mesas dos pedidos
+  }
+
+  function fecharMesa(id){
+    let mesa = dados.mesas.find(m=>m.id===id);
+    if(mesa){ mesa.status="fechada"; salvar(); listarMesas(); atualizarMesas(); }
+  }
+
+  function listarMesas(){
+    let div=document.getElementById("listaMesas");
+    div.innerHTML="";
+    dados.mesas.forEach(m=>{
+      let el=document.createElement("div");
+      el.className="mesa "+(m.status==="aberta"?"aberta":"fechada");
+      el.innerHTML=`Mesa ${m.id} - ${m.status.toUpperCase()} ${m.status==="aberta" ? `<button onclick="fecharMesa(${m.id})">Fechar</button>`:""}`;
+      div.appendChild(el);
+    });
+  }
+
+  // Funções de Pedidos
+  function atualizarMesas(){
+    let sel=document.getElementById("mesaSelect");
+    sel.innerHTML="";
+    dados.mesas.filter(m=>m.status==="aberta").forEach(m=>{
+      let opt=document.createElement("option");
+      opt.value=m.id;
+      opt.textContent="Mesa "+m.id;
+      sel.appendChild(opt);
+    });
+  }
+
+  function atualizarProdutos(){
+    let sel=document.getElementById("produtoSelect");
+    sel.innerHTML="";
+    dados.estoque.forEach(p=>{
+      let opt=document.createElement("option");
+      opt.value=p.nome;
+      opt.textContent=`${p.nome} (R$ ${p.valor}) - ${p.qtd>0?p.qtd+" un":"serviço"}`;
+      sel.appendChild(opt);
+    });
+  }
+
+  function adicionarPedido(){
+    let mesa=document.getElementById("mesaSelect").value;
+    let produtoNome=document.getElementById("produtoSelect").value;
+    let valor=parseFloat(document.getElementById("valor").value)||0;
+
+    if(!mesa || !produtoNome){ alert("Selecione mesa e produto!"); return; }
+
+    let produto=dados.estoque.find(e=>e.nome===produtoNome);
+
+    if(!valor && produto){ valor=produto.valor; }
+
+    if(produto && produto.qtd>0){
+      if(produto.qtd>0){
+        produto.qtd--;
+      } else {
+        alert("❌ Estoque insuficiente!");
+        return;
+      }
+    }
+
+    dados.pedidos.push({mesa, produto:produtoNome, valor, data:new Date().toLocaleDateString()});
+    salvar();
+    listarPedidos();
+    atualizarProdutos();
+    document.getElementById("valor").value="";
+  }
+
+  function listarPedidos(){
+    let div=document.getElementById("listaPedidos");
+    div.innerHTML="";
+    dados.pedidos.forEach(p=>{
+      let el=document.createElement("div");
+      el.className="pedido";
+      el.innerText=`Mesa ${p.mesa} - ${p.produto} - R$ ${p.valor}`;
+      div.appendChild(el);
+    });
+  }
+
+  // Inicialização
+  listarGarcons();
+  listarMesas();
+  listarPedidos();
+  atualizarMesas();
+  atualizarProdutos();
 </script>
 </body>
 </html>
